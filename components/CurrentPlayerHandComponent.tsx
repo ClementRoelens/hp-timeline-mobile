@@ -1,55 +1,58 @@
 import { Player } from '../models/Player'
 import { Event } from '../models/Event'
-import EventCardComponent from './EventCardComponent';
-import { View, Text, Pressable, StyleSheet, FlatList } from 'react-native';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
+import DraggableComponent from './DraggableComponent';
+
+type DropZone = {
+  x: number; y: number; width: number; height: number
+};
 
 type Props = {
   player: Player;
-  playEvent: (event: Event) => void;
+  playEvent: (event: Event, xCoordinate: number) => void;
+  dropZone : DropZone | null;
 }
 
-const CurrentPlayerHandComponent = (props: Props) => {
-
+const CurrentPlayerHandComponent = ({player, playEvent, dropZone}: Props) => {
+  
   return (
     <View>
-      <Text style={styles.title}>Au tour de {props.player.name}</Text>
-      {/* <View style={styles.hand}> */}
-        <FlatList
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[
-            styles.hand,
-            props.player.hand.length <= 4 ? styles.centeredList : {}
-          ]}
-          horizontal={true}
-          data={props.player.hand}
-          keyExtractor={item => item.id.toString()}
-          renderItem={({ item }) =>
-            <Pressable style={styles.event} onPress={() => props.playEvent(item)}>
-              <EventCardComponent event={item} isFaceUp={false} isSelection={false} isRevealing={false} />
-            </Pressable>
+      <Text style={styles.title}>Au tour de {player.name}</Text>
+      <FlatList
+        data={player.hand}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.hand,
+          player.hand.length <= 4 ? styles.centeredList : {}
+        ]}
+        horizontal={true}
+        renderItem={({ item }) => 
+            // <View style={styles.cardContainer}>
+              <DraggableComponent event={item} playEvent={playEvent} dropZone={dropZone}/>
+            // </View> 
         }
-        />
-      {/* </View> */}
+        keyExtractor={item => item.id.toString()}
+      />
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  title: {
+  cardContainer : {
+    // zIndex:1,
+    // position:'relative',
+    // overflow : 'visible'
+  }, title: {
     fontSize: 20,
     textAlign: 'center',
-    marginTop:0,
-    marginBottom:15
+    marginTop: 0,
+    marginBottom: 15
   },
   hand: {
-    flexGrow:1
+    flexGrow: 1
   },
-  centeredList : {
-    justifyContent:'center'
-  },
-  event: {
-    transitionProperty: 'transform',
-    transitionDuration: '150'
+  centeredList: {
+    justifyContent: 'center'
   }
 });
 

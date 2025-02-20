@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { fetchEvents } from '../service/DataService';
 import { Event } from '../models/Event';
 import { useAppDispatch, useAppSelector } from '../config/hook';
@@ -6,8 +6,9 @@ import { drawCard, setEvents } from './eventSlice';
 import { addCardToHand, endTurn, removeCardFromHand } from './playerSlice';
 import EventCardComponent from './EventCardComponent';
 import { View, StyleSheet, FlatList, Text, LayoutChangeEvent } from 'react-native';
-import CurrentPlayerHandComponent from './CurrentPlayerHandComponent';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+// import CurrentPlayerHandComponent from './CurrentPlayerHandComponent';
+import { Gesture } from 'react-native-gesture-handler';
+import DraggableComponent from './DraggableComponent';
 
 type EventPosition = {
     id: number,
@@ -15,9 +16,9 @@ type EventPosition = {
 };
 
 type DropZone = {
-    x: number; 
-    y: number; 
-    width: number; 
+    x: number;
+    y: number;
+    width: number;
     height: number
 };
 
@@ -32,6 +33,8 @@ const PlayGroundComponent = () => {
     const players = useAppSelector(state => state.player.players);
     const currentPlayerIndex = useAppSelector(state => state.player.currentPlayerIndex);
     const dispatch = useAppDispatch();
+
+    // const gestureRef = useRef(Gesture.Pan());
 
     useEffect(() => {
         fetchEvents()
@@ -132,24 +135,50 @@ const PlayGroundComponent = () => {
 
     return (
         <View style={styles.playground}>
+            <View>
+                <Text style={styles.title}>Au tour de {players[currentPlayerIndex].name}</Text>
                 <FlatList
-                    data={playedEvents}
-                    onLayout={setDropZoneLayout}
+                    data={players[currentPlayerIndex].hand}
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={[
-                        styles.list,
-                        playedEvents.length <= 4 ? styles.centeredList : {}
+                        {flexGrow:1},
+                        players[currentPlayerIndex].hand.length <= 4 ? styles.centeredList : {}
                     ]}
                     horizontal={true}
                     renderItem={({ item }) =>
-                        <View onLayout={e => addPosition(e, item.id)} style={styles.cardContainer}>
-                            <EventCardComponent onLayout={e => addPosition(e, item.id)} event={item} isFaceUp={true} isSelection={false} isRevealing={false} />
+                        <View style={styles.cardContainer}>
+                            <DraggableComponent event={item} playEvent={tryEvent} dropZone={dropZone}/>
                         </View>
                     }
                     keyExtractor={item => item.id.toString()}
                 />
-                <CurrentPlayerHandComponent player={players[currentPlayerIndex]} playEvent={tryEvent} dropZone={dropZone} />
-                {/* {revealingEvent &&
+            </View>
+            <FlatList
+                data={playedEvents}
+                onLayout={setDropZoneLayout}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={[
+                    styles.list,
+                    playedEvents.length <= 4 ? styles.centeredList : {}
+                ]}
+                horizontal={true}
+                renderItem={({ item }) =>
+                    <View onLayout={e => addPosition(e, item.id)} style={styles.cardContainer}>
+                        <EventCardComponent onLayout={e => addPosition(e, item.id)} event={item} isFaceUp={true} isSelection={false} isRevealing={false} />
+                    </View>
+                }
+                keyExtractor={item => item.id.toString()}
+            />
+            {/* <ScrollView 
+                    simultaneousHandlers={gestureRef}
+                    onLayout={setDropZoneLayout} horizontal={true}
+                    contentContainerStyle={[styles.list, playedEvents.length <= 4 ? styles.centeredList : {}]}>
+                    {playedEvents.map((event: Event) => 
+                        <EventCardComponent key={event.id} onLayout={e => addPosition(e, event.id)} event={event} isFaceUp={true} isSelection={false} isRevealing={false} />
+                    )}
+                </ScrollView> */}
+            {/* <CurrentPlayerHandComponent players[currentPlayerIndex]={players[currentPlayerIndex]} playEvent={tryEvent} dropZone={dropZone} gestureRef={gestureRef} /> */}
+            {/* {revealingEvent &&
                 <View style={styles.revealing}>
                     <View style={styles.revealingElement}>
                         <EventCardComponent event={revealingEvent} isFaceUp={true} isSelection={false} isRevealing={true} />
@@ -168,21 +197,25 @@ const styles = StyleSheet.create({
         margin: 0,
         padding: 0,
         flex: 1,
-        flexDirection: 'column-reverse',
+        // flexDirection: 'column-reverse',
         zIndex: -1
     },
+    title: {
+        fontSize: 20,
+        textAlign: 'center',
+        marginTop: 0,
+        marginBottom: 15
+      },
     list: {
-        position: 'relative',
-        flexGrow: 1,
         marginTop: 20,
-        // zIndex: 50
+        zIndex: 5
     },
     centeredList: {
         justifyContent: 'center',
         // zIndex: 1
     },
     cardContainer: {
-        // zIndex: 2
+        zIndex: 6
     }, revealing: {
         position: 'absolute',
         top: 0,

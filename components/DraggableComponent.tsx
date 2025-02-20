@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native'
 import React, { useState } from 'react'
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, PanGesture } from 'react-native-gesture-handler';
 import { Event } from '@/models/Event';
 import EventCardComponent from './EventCardComponent';
 
@@ -9,6 +9,7 @@ type Props = {
   event: Event;
   playEvent: (event: Event, xCoordinate: number) => void;
   dropZone: { x: number; y: number; width: number; height: number } | null;
+  // gestureRef : React.MutableRefObject<PanGesture>;
 }
 
 const DraggableComponent = ({ event, playEvent, dropZone }: Props) => {
@@ -49,6 +50,7 @@ const DraggableComponent = ({ event, playEvent, dropZone }: Props) => {
         console.error("Erreur lors du onEnd de DraggableComponent", error);
       }
     })
+    // .withRef(gestureRef)
     .runOnJS(true);
 
   const animatedStyle = useAnimatedStyle(() => ({

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { fetchEvents } from '../service/DataService';
 import { Event } from '../models/Event';
 import { useAppDispatch, useAppSelector } from '../config/hook';
@@ -6,9 +6,7 @@ import { drawCard, setEvents } from './eventSlice';
 import { addCardToHand, endTurn, removeCardFromHand } from './playerSlice';
 import EventCardComponent from './EventCardComponent';
 import { View, StyleSheet, FlatList, Text, LayoutChangeEvent } from 'react-native';
-// import CurrentPlayerHandComponent from './CurrentPlayerHandComponent';
-import { Gesture } from 'react-native-gesture-handler';
-import DraggableComponent from './DraggableComponent';
+import CurrentPlayerHandComponent from './CurrentPlayerHandComponent';
 
 type EventPosition = {
     id: number,
@@ -34,7 +32,6 @@ const PlayGroundComponent = () => {
     const currentPlayerIndex = useAppSelector(state => state.player.currentPlayerIndex);
     const dispatch = useAppDispatch();
 
-    // const gestureRef = useRef(Gesture.Pan());
 
     useEffect(() => {
         fetchEvents()
@@ -135,24 +132,7 @@ const PlayGroundComponent = () => {
 
     return (
         <View style={styles.playground}>
-            <View>
-                <Text style={styles.title}>Au tour de {players[currentPlayerIndex].name}</Text>
-                <FlatList
-                    data={players[currentPlayerIndex].hand}
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={[
-                        {flexGrow:1},
-                        players[currentPlayerIndex].hand.length <= 4 ? styles.centeredList : {}
-                    ]}
-                    horizontal={true}
-                    renderItem={({ item }) =>
-                        <View style={styles.cardContainer}>
-                            <DraggableComponent event={item} playEvent={tryEvent} dropZone={dropZone}/>
-                        </View>
-                    }
-                    keyExtractor={item => item.id.toString()}
-                />
-            </View>
+            <CurrentPlayerHandComponent player={players[currentPlayerIndex]} playEvent={tryEvent} dropZone={dropZone} />
             <FlatList
                 data={playedEvents}
                 onLayout={setDropZoneLayout}
@@ -164,20 +144,11 @@ const PlayGroundComponent = () => {
                 horizontal={true}
                 renderItem={({ item }) =>
                     <View onLayout={e => addPosition(e, item.id)} style={styles.cardContainer}>
-                        <EventCardComponent onLayout={e => addPosition(e, item.id)} event={item} isFaceUp={true} isSelection={false} isRevealing={false} />
+                        <EventCardComponent onLayout={e => addPosition(e, item.id)} event={item} isFaceUp={true} isRevealing={false} />
                     </View>
                 }
                 keyExtractor={item => item.id.toString()}
             />
-            {/* <ScrollView 
-                    simultaneousHandlers={gestureRef}
-                    onLayout={setDropZoneLayout} horizontal={true}
-                    contentContainerStyle={[styles.list, playedEvents.length <= 4 ? styles.centeredList : {}]}>
-                    {playedEvents.map((event: Event) => 
-                        <EventCardComponent key={event.id} onLayout={e => addPosition(e, event.id)} event={event} isFaceUp={true} isSelection={false} isRevealing={false} />
-                    )}
-                </ScrollView> */}
-            {/* <CurrentPlayerHandComponent players[currentPlayerIndex]={players[currentPlayerIndex]} playEvent={tryEvent} dropZone={dropZone} gestureRef={gestureRef} /> */}
             {/* {revealingEvent &&
                 <View style={styles.revealing}>
                     <View style={styles.revealingElement}>
@@ -198,24 +169,24 @@ const styles = StyleSheet.create({
         padding: 0,
         flex: 1,
         // flexDirection: 'column-reverse',
-        zIndex: -1
+        zIndex: 0,
+        elevation : 0
     },
-    title: {
-        fontSize: 20,
-        textAlign: 'center',
-        marginTop: 0,
-        marginBottom: 15
-      },
     list: {
         marginTop: 20,
-        zIndex: 5
+        zIndex: 1,
+        elevation: 1,
+        flexGrow:1,
+        flexDirection:'row',
+        justifyContent:'space-around'
     },
     centeredList: {
         justifyContent: 'center',
         // zIndex: 1
     },
     cardContainer: {
-        zIndex: 6
+        zIndex: 2,
+        elevation:2
     }, revealing: {
         position: 'absolute',
         top: 0,

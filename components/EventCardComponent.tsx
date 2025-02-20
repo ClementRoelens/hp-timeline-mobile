@@ -5,12 +5,11 @@ import { Event } from '@/models/Event';
 type Props = {
   event: Event
   isFaceUp: boolean;
-  isSelection: boolean;
   isRevealing: boolean;
   onLayout? : (event : LayoutChangeEvent) => void;
 }
 
-const EventCardComponent = ({ event, isFaceUp, isSelection, isRevealing, onLayout }: Props) => {
+const EventCardComponent = ({ event, isFaceUp, isRevealing, onLayout }: Props) => {
   const [isRevealed, setIsRevealed] = useState(false);
   const screenWidth = Dimensions.get("window").width;
   const cardWidth = screenWidth * 0.22;
@@ -26,8 +25,7 @@ const EventCardComponent = ({ event, isFaceUp, isSelection, isRevealing, onLayou
   return (
     <View style={[
       styles.card,
-      isSelection ? styles.selection : "",
-      isFaceUp ? {zIndex:200} : {zIndex : 1},
+      isFaceUp ? {zIndex:10} : {zIndex : 3},
       { width: cardWidth }
     ]}
     onLayout={onLayout}>
@@ -72,9 +70,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     // margin: 0,
     fontSize: 15
-  },
-  selection: {
-    opacity: 0.5
   },
   toBeRevealed: {
     opacity: 0,

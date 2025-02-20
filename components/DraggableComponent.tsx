@@ -9,11 +9,9 @@ type Props = {
   event: Event;
   playEvent: (event: Event, xCoordinate: number) => void;
   dropZone: { x: number; y: number; width: number; height: number } | null;
-  // gestureRef : React.MutableRefObject<PanGesture>;
 }
 
 const DraggableComponent = ({ event, playEvent, dropZone }: Props) => {
-  const [canDrag, setCanDrag] = useState(false);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
 
@@ -44,33 +42,25 @@ const DraggableComponent = ({ event, playEvent, dropZone }: Props) => {
           console.log("Gesture.Pan() : carte non jouée");
           translateX.value = withSpring(0);
           translateY.value = withSpring(0);
-          setCanDrag(false);
         }
       } catch (error) {
         console.error("Erreur lors du onEnd de DraggableComponent", error);
       }
     })
-    // .withRef(gestureRef)
     .runOnJS(true);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }, { translateY: translateY.value }],
-    zIndex: 100,
-    // position: isDragging.value ? 'absolute' : 'relative'
+    zIndex: 10,
+    elevation:10
   }));
 
   return (
-    <View onTouchStart={() => setCanDrag(true)}>
+    <View>
       <GestureDetector gesture={gesture}>
-        {canDrag ?
           <Animated.View style={animatedStyle}>
-            <EventCardComponent event={event} isFaceUp={false} isSelection={false} isRevealing={false} />
+            <EventCardComponent event={event} isFaceUp={false} isRevealing={false} />
           </Animated.View>
-          :
-          <View>
-            <EventCardComponent event={event} isFaceUp={false} isSelection={false} isRevealing={false} />
-          </View>
-        }
       </GestureDetector>
     </View>
   )

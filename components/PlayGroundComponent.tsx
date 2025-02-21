@@ -167,26 +167,18 @@ const styles = StyleSheet.create({
     playground: {
         margin: 0,
         padding: 0,
-        flex: 1,
-        // flexDirection: 'column-reverse',
-        zIndex: 0,
-        elevation : 0
+        flex: 1
     },
     list: {
         marginTop: 20,
-        zIndex: 1,
-        elevation: 1,
         flexGrow:1,
         flexDirection:'row',
         justifyContent:'space-around'
     },
     centeredList: {
-        justifyContent: 'center',
-        // zIndex: 1
+        justifyContent: 'center'
     },
     cardContainer: {
-        zIndex: 2,
-        elevation:2
     }, revealing: {
         position: 'absolute',
         top: 0,

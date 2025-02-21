@@ -6,7 +6,7 @@ type Props = {
   event: Event
   isFaceUp: boolean;
   isRevealing: boolean;
-  onLayout? : (event : LayoutChangeEvent) => void;
+  onLayout?: (event: LayoutChangeEvent) => void;
 }
 
 const EventCardComponent = ({ event, isFaceUp, isRevealing, onLayout }: Props) => {
@@ -25,10 +25,9 @@ const EventCardComponent = ({ event, isFaceUp, isRevealing, onLayout }: Props) =
   return (
     <View style={[
       styles.card,
-      isFaceUp ? {zIndex:10} : {zIndex : 3},
       { width: cardWidth }
     ]}
-    onLayout={onLayout}>
+      onLayout={onLayout}>
       <Text style={styles.name}>{event.name}</Text>
       {isFaceUp &&
         <Text style={[
@@ -44,7 +43,6 @@ const EventCardComponent = ({ event, isFaceUp, isRevealing, onLayout }: Props) =
 
 const styles = StyleSheet.create({
   card: {
-    // position:'absolute',
     height: 120,
     borderRadius: 15,
     borderStyle: 'solid',
@@ -68,7 +66,6 @@ const styles = StyleSheet.create({
   year: {
     color: 'white',
     textAlign: 'center',
-    // margin: 0,
     fontSize: 15
   },
   toBeRevealed: {

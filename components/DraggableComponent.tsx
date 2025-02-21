@@ -36,10 +36,8 @@ const DraggableComponent = ({ event, playEvent, dropZone }: Props) => {
           finalY < dropZone.y + dropZone.height;
 
         if (isInsideDropZone) {
-          console.log("Gesture.Pan() : carte jouée");
           playEvent(event, finalX);
         } else {
-          console.log("Gesture.Pan() : carte non jouée");
           translateX.value = withSpring(0);
           translateY.value = withSpring(0);
         }
@@ -51,8 +49,7 @@ const DraggableComponent = ({ event, playEvent, dropZone }: Props) => {
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }, { translateY: translateY.value }],
-    zIndex: 10,
-    elevation:10
+    zIndex : 10
   }));
 
   return (

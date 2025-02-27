@@ -5,8 +5,9 @@ import { useAppDispatch, useAppSelector } from '../config/hook';
 import { drawCard, setEvents } from './eventSlice';
 import { addCardToHand, endTurn, removeCardFromHand } from './playerSlice';
 import EventCardComponent from './EventCardComponent';
-import { View, StyleSheet, FlatList, Text, LayoutChangeEvent } from 'react-native';
+import { View, StyleSheet, FlatList, LayoutChangeEvent, Dimensions } from 'react-native';
 import CurrentPlayerHandComponent from './CurrentPlayerHandComponent';
+import { useSharedValue } from 'react-native-reanimated';
 
 type EventPosition = {
     id: number,
@@ -32,6 +33,10 @@ const PlayGroundComponent = () => {
     const currentPlayerIndex = useAppSelector(state => state.player.currentPlayerIndex);
     const dispatch = useAppDispatch();
 
+    const currentDragging = useSharedValue(NaN);
+
+    const screenWidth = Dimensions.get("window").width;
+    const cardWidth = screenWidth * 0.22;
 
     useEffect(() => {
         fetchEvents()
@@ -42,30 +47,42 @@ const PlayGroundComponent = () => {
                         dispatch(addCardToHand({ playerIndex: j, event: drawnEvent }));
                     }
                 }
-                // to do : remettre première ligne
-                // setPlayedEvents([...res.splice(0, 3)]);
+                // Pour les tests
+                // const events: Event[] = [];
+                // for (let i = 0; i < 5; i++) {
+                //     events.push(res.splice(0, 1)[0])
+                // }
+                // events.sort((a, b) => a.year - b.year);
+                // setPlayedEvents(events);
+
+                // Vraie règle
                 setPlayedEvents([...playedEvents, res.splice(0, 1)[0]]);
                 dispatch(setEvents(res));
             });
     }, []);
 
+    const getAroundEvents = (x: number): { beforeEvent: Event | null, afterEvent: Event | null, insertedIndex: number } => {
+        let insertedIndex = eventPositions.length;
+
+        if (x < eventPositions[0].x) {
+            insertedIndex = 0;
+        }
+        for (let i = 0; i < eventPositions.length - 1; i++) {
+            if (x > eventPositions[i].x && x < eventPositions[i + 1].x) {
+                insertedIndex = i + 1;
+                break;
+            }
+        }
+
+        const beforeEvent = insertedIndex > 0 ? playedEvents[insertedIndex - 1] : null;
+        const afterEvent = insertedIndex < playedEvents.length ? playedEvents[insertedIndex] : null;
+
+        return { beforeEvent, afterEvent, insertedIndex };
+    };
+
     const tryEvent = (insertedEvent: Event, dropX: number) => {
         try {
-            let insertedIndex = eventPositions.length;
-
-            if (dropX < eventPositions[0].x) {
-                insertedIndex = 0;
-            }
-
-            for (let i = 0; i < eventPositions.length - 1; i++) {
-                if (dropX > eventPositions[i].x && dropX < eventPositions[i + 1].x) {
-                    insertedIndex = i + 1;
-                    break;
-                }
-            }
-
-            const beforeEvent = insertedIndex > 0 ? playedEvents[insertedIndex - 1] : null;
-            const afterEvent = insertedIndex < playedEvents.length ? playedEvents[insertedIndex] : null;
+            const { beforeEvent, afterEvent, insertedIndex } = getAroundEvents(dropX);
 
             // setRevealingEvent(playedEvents[insertedIndex]);
             // setTimeout(() => setRevealingEvent(null), 2000);
@@ -109,7 +126,7 @@ const PlayGroundComponent = () => {
                 const newPositions = prevState.map(e => {
                     if (e.id === id) {
                         isPresent = true;
-                        e.x = x;
+                        e.x = x + cardWidth/2;
                         return e;
                     }
                     return e;
@@ -119,20 +136,29 @@ const PlayGroundComponent = () => {
                     newPositions.push({ id, x });
                 }
 
-                return newPositions;
+                // Ne pas oublier de trier le tableau des positions, pour qu'il soit synchronisé avec le tableau des events
+                return newPositions.sort((a,b) => a.x - b.x);
             });
         });
     }
 
     const setDropZoneLayout = (event: LayoutChangeEvent) => {
         event.currentTarget.measureInWindow((x, y, width, height) => {
-            setDropZone({ x, y, width, height });
+            const dropZone = { x, y, width, height };
+            // On rajoute une petite marge pour que le joueur ne joue pas une carte par erreur
+            dropZone.y += 25;
+            setDropZone(dropZone);
         });
     };
 
+
     return (
         <View style={styles.playground}>
-            <CurrentPlayerHandComponent player={players[currentPlayerIndex]} playEvent={tryEvent} dropZone={dropZone} />
+            <CurrentPlayerHandComponent
+                player={players[currentPlayerIndex]}
+                playEvent={tryEvent} dropZone={dropZone}
+                currentDragging={currentDragging}
+            />
             <FlatList
                 data={playedEvents}
                 onLayout={setDropZoneLayout}
@@ -143,7 +169,7 @@ const PlayGroundComponent = () => {
                 ]}
                 horizontal={true}
                 renderItem={({ item }) =>
-                    <View onLayout={e => addPosition(e, item.id)} style={styles.cardContainer}>
+                    <View onLayout={e => addPosition(e, item.id)}>
                         <EventCardComponent onLayout={e => addPosition(e, item.id)} event={item} isFaceUp={true} isRevealing={false} />
                     </View>
                 }
@@ -171,15 +197,16 @@ const styles = StyleSheet.create({
     },
     list: {
         marginTop: 20,
-        flexGrow:1,
-        flexDirection:'row',
-        justifyContent:'space-around'
+        paddingHorizontal: 25,
+        flexGrow: 1,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap:7
     },
     centeredList: {
         justifyContent: 'center'
     },
-    cardContainer: {
-    }, revealing: {
+    revealing: {
         position: 'absolute',
         top: 0,
         width: '100%',
@@ -195,9 +222,6 @@ const styles = StyleSheet.create({
         marginTop: 10,
         textAlign: 'center',
         fontSize: 50
-    },
-    highlight: {
-        backgroundColor: "lightblue",
     }
 });
 

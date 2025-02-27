@@ -2,9 +2,9 @@ import { Player } from '../models/Player'
 import { Event } from '../models/Event'
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import DraggableComponent from './DraggableComponent';
-import Animated, { SharedValue, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { useEffect, useState } from 'react';
+import Animated, { SharedValue, useAnimatedStyle, useSharedValue, withDecay, withSpring, withTiming } from 'react-native-reanimated';
+import { Gesture, GestureDetector, GestureUpdateEvent, PanGestureHandlerEventPayload } from 'react-native-gesture-handler';
+import { useState } from 'react';
 
 type DropZone = {
   x: number; y: number; width: number; height: number
@@ -18,31 +18,50 @@ type Props = {
 }
 
 const CurrentPlayerHandComponent = ({ player, playEvent, dropZone, currentDragging }: Props) => {
+  const [isScrolling, setIsScrolling] = useState(false);
   const scrollX = useSharedValue(0);
   const screenWidth = Dimensions.get("window").width;
   const cardWidth = screenWidth * 0.22;
-  // const maxScroll = Math.min(0, screenWidth - totalCardsWidth);
-  // const minScroll = 0; 
-  const totalCardsWidth = player.hand.length * cardWidth + (player.hand.length-1) * 10;
-  
+  const totalCardsWidth = player.hand.length * cardWidth + (player.hand.length - 1);
+
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: scrollX.value }],
+    zIndex:90
   }));
-  
+
+  const scroll = (event: GestureUpdateEvent<PanGestureHandlerEventPayload>) => {
+    try {
+      setIsScrolling(true);
+      const newValue = scrollX.value + event.velocityX * 0.25;
+      scrollX.value = withSpring(
+        newValue < 0 ?
+          Math.max(-totalCardsWidth / 4 + 25, newValue) :
+          Math.min(totalCardsWidth / 4 - 25, newValue)
+        , { damping: 100 }
+      );
+    } catch (error) {
+      console.log("erreur dans CurrentPlayerHandComponent.scroll", error);
+    }
+  };
+
   const gesture = Gesture.Pan()
-  .onUpdate(event => {
-    if (player.hand.length > 4){
-        const newValue = scrollX.value + event.translationX * 1.5;
-        console.log("newValue théorique : " + newValue);
-        console.log("max possible : " + totalCardsWidth);
-        scrollX.value = withTiming(
-          newValue < 0 ? 
-            Math.max(-totalCardsWidth/4, newValue) :
-            Math.min(totalCardsWidth/4,newValue)
-          , {duration : 25}
-        );
+    .onUpdate(event => {
+      try {
+        if (player.hand.length > 4) {
+          scroll(event);
+        }
+      } catch (error){
+        console.log("erreur dans CurrentPlayerHandComponent.onUpdate", error);
       }
-    });
+    })
+    .onEnd(() => {
+      try {
+        setIsScrolling(false);
+      } catch (error) {
+        console.log("erreur dans CurrentPlayerHandComponent.onEnd", error);
+      }
+    })
+    .runOnJS(true);
 
   return (
     <View>
@@ -56,6 +75,9 @@ const CurrentPlayerHandComponent = ({ player, playEvent, dropZone, currentDraggi
               playEvent={playEvent}
               dropZone={dropZone}
               currentDragging={currentDragging}
+              scroll={scroll}
+              isScrolling={isScrolling}
+              setIsScrolling={setIsScrolling}
             />
             // <EventCardComponent key={event.id} event={event} isFaceUp={false} isRevealing={false} />
           )}
@@ -71,8 +93,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     textAlign: 'center',
-    marginTop: 20,
-    marginBottom: 0
+    marginTop: 0,
+    marginBottom: 20
   },
   hand: {
     flexGrow: 1,

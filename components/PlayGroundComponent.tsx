@@ -201,7 +201,8 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         flexDirection: 'row',
         justifyContent: 'center',
-        gap:7
+        gap:7,
+        zIndex : 0
     },
     centeredList: {
         justifyContent: 'center'

@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native'
 import React from 'react'
 import Animated, { SharedValue, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, GestureUpdateEvent, PanGestureHandlerEventPayload } from 'react-native-gesture-handler';
 import { Event } from '@/models/Event';
 import EventCardComponent from './EventCardComponent';
 
@@ -10,58 +10,79 @@ type Props = {
   playEvent: (event: Event, xCoordinate: number) => void;
   dropZone: { x: number; y: number; width: number; height: number } | null;
   currentDragging: SharedValue<number>;
+  scroll: (event: GestureUpdateEvent<PanGestureHandlerEventPayload>) => void;
+  isScrolling: boolean;
+  setIsScrolling: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const DraggableComponent = ({ event, playEvent, dropZone, currentDragging }: Props) => {
+const DraggableComponent = ({ event, playEvent, dropZone, currentDragging, scroll, isScrolling, setIsScrolling }: Props) => {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
 
   const gesture = Gesture.Pan()
-    .onStart(() => {
-      if (Number.isNaN(currentDragging.get())) {
-        currentDragging.set(event.id);
+    .onStart((translationEvent) => {
+      try {
+        // Si la composante horizontale est trop faible, on est dans un scroll plus que dans un drag
+        const verticalWeight = Math.abs(translationEvent.velocityY) / Math.abs(translationEvent.velocityX);
+        if (verticalWeight < 1) {
+          setIsScrolling(true);
+        } else {
+          if (Number.isNaN(currentDragging.get())) {
+            currentDragging.set(event.id);
+          }
+        }
+      } catch (error) {
+        console.log("erreur de DraggableComponent.onStart", error)
       }
+
     })
     .onUpdate((translationEvent) => {
       try {
-        if (currentDragging.get() === event.id) {
-          translateX.value = translationEvent.translationX;
-          translateY.value = translationEvent.translationY;
-          // move(translationEvent.absoluteX, translationEvent.absoluteY);
+        if (!isScrolling) {
+          if (currentDragging.get() === event.id) {
+            translateX.value = translationEvent.translationX;
+            translateY.value = translationEvent.translationY;
+          }
+        } else {
+          scroll(translationEvent);
         }
       } catch (error) {
-        console.error("Erreur dans onUpdate de DraggableComponent", error);
+        console.log("erreur de DraggableComponent.onUpdate", error);
       }
     })
     .onEnd((translationEvent) => {
       try {
-        if (currentDragging.get() === event.id) {
-          const finalX = translationEvent.absoluteX;
-          const finalY = translationEvent.absoluteY;
+        if (!isScrolling) {
+          if (currentDragging.get() === event.id) {
+            const finalX = translationEvent.absoluteX;
+            const finalY = translationEvent.absoluteY;
 
-          const isInsideDropZone = dropZone &&
-            finalX > dropZone.x &&
-            finalX < dropZone.x + dropZone.width &&
-            finalY > dropZone.y &&
-            finalY < dropZone.y + dropZone.height;
+            const isInsideDropZone = dropZone &&
+              finalX > dropZone.x &&
+              finalX < dropZone.x + dropZone.width &&
+              finalY > dropZone.y &&
+              finalY < dropZone.y + dropZone.height;
 
-          if (isInsideDropZone) {
-            playEvent(event, finalX);
-          } else {
-            translateX.value = withSpring(0);
-            translateY.value = withSpring(0);
+            if (isInsideDropZone) {
+              playEvent(event, finalX);
+            } else {
+              translateX.value = withSpring(0);
+              translateY.value = withSpring(0);
+            }
+            currentDragging.set(NaN);
           }
-          currentDragging.set(NaN);
+        } else {
+          setIsScrolling(false);
         }
       } catch (error) {
-        console.error("Erreur lors du onEnd de DraggableComponent", error);
-      }
+        console.log("erreur de DraggableComponent.onEnd", error);
+      }      
     })
     .runOnJS(true);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }, { translateY: translateY.value }],
-    zIndex: 10
+    zIndex: 100
   }));
 
   return (
